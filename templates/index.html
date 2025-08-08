@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Editable Multi-Child Tree</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+  <style>
+    /* ==== Base: keep white page + purple accents like your original CSS ==== */
+    :root{
+      --bg:#ffffff;             /* white background */
+      --text:#161616;
+      --muted:#637087;
+      --line:#e6e6e6;
+      --accent:#6200ee;         /* purple from your CSS */
+      --accent-dark:#3700b3;    /* hover purple */
+      --card:#ffffff;           /* panels stay white */
+      --chip:#f6f6ff;           /* subtle purple-tinted chip */
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      background:var(--bg);
+      color:var(--text);
+      font-family:'Roboto', system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    }
+
+    /* ==== Header Toolbar (purple buttons, white background) ==== */
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;
+      padding:12px 16px;
+      border-bottom:1px solid var(--line);
+      background:var(--card);
+      position:sticky;top:0;z-index:10;
+    }
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{
+      border:none;border-radius:10px;
+      padding:8px 12px;font-weight:500;cursor:pointer;
+      background:var(--accent);color:#fff;
+      transition:transform .05s ease, background .15s ease;
+    }
+    button:hover{background:var(--accent-dark)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:#f2f2f8;color:#222;border:1px solid var(--line)}
+    button.secondary:hover{background:#e9e9f7}
+    button.danger{background:#ff5c6c}
+    button.danger:hover{background:#e44c5c}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .hint{color:var(--muted);font-size:12px}
+
+    /* ==== Main canvas: tree on left, node editor on right ==== */
+    #canvas{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:14px;
+      padding:14px;
+      height:calc(100vh - 58px);
+    }
+
+    /* ==== Tree area (white background like your right panel) ==== */
+    #treeWrap{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:auto;
+      min-height:60vh;
+    }
+    svg{display:block;width:2000px;height:1600px;background:var(--card)}
+
+    /* ==== Side panel (kept white) ==== */
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .panel h3{margin:6px 0 4px 0}
+    .field{display:flex;flex-direction:column;gap:6px}
+    input, textarea{
+      background:#fff;border:1px solid var(--line);
+      border-radius:10px;color:var(--text);padding:10px;
+      font:inherit;
+    }
+
+    /* ==== Node visuals (white card, purple stroke) ==== */
+    .node rect{
+      fill:#ffffff;                      /* white node */
+      stroke:var(--accent);              /* purple outline */
+      stroke-width:1.6;
+      filter: drop-shadow(0 1px 0 rgba(0,0,0,.03));
+    }
+    .node.selected rect{stroke-width:2.2}
+    .edge{stroke:#cfd2dc;stroke-width:1.2}
+
+    /* ==== Center all node text ==== */
+    .node text{
+      fill:var(--text);
+      font-size:12px;
+      text-anchor:middle;
+      dominant-baseline:middle;
+    }
+    .desc{fill:var(--muted)}
+
+    /* Small “chip” behind title for readability on white, optional */
+    .title-bg{
+      fill:var(--chip);
+      rx:6; ry:6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="toolbar">
+      <button id="addChildBtn" disabled>Add child</button>
+      <button id="editBtn" class="secondary" disabled>Edit</button>
+      <button id="deleteBtn" class="danger" disabled>Delete</button>
+      <button id="centerBtn" class="secondary">Center view</button>
+    </div>
+    <div class="hint">Click a node to select. Double-click a node title to quick-edit.</div>
+  </header>
+
+  <main id="canvas">
+    <div id="treeWrap">
+      <svg id="tree" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <aside class="panel">
+      <h3>Node details</h3>
+      <div class="field">
+        <label for="title">Title</label>
+        <input id="title" placeholder="Title" />
+      </div>
+      <div class="field">
+        <label for="desc">Description</label>
+        <textarea id="desc" rows="6" placeholder="Description"></textarea>
+      </div>
+      <button id="saveBtn" class="secondary" disabled>Save changes</button>
+    </aside>
+  </main>
+
+  <script>
+    // --- Socket & data ---
+    const socket = io();
+    socket.on("tree_updated", t => { tree = t; render(); syncDetailPanel(); });
+
+    let tree = null;
+    let selectedId = null;
+
+    async function fetchTree(){
+      const r = await fetch("/api/tree");
+      tree = await r.json();
+    }
+
+    // --- General tree helpers ---
+    function visit(node, fn, depth=0, parent=null){
+      fn(node, depth, parent);
+      (node.children || []).forEach(c => visit(c, fn, depth+1, node));
+    }
+    function findNode(node, id, parent=null){
+      if (!node) return {node:null,parent:null};
+      if (node.id === id) return {node, parent};
+      for (const c of (node.children||[])){
+        const r = findNode(c, id, node);
+        if (r.node) return r;
+      }
+      return {node:null,parent:null};
+    }
+
+    // --- Tidy layout: guarantees no overlaps ---
+    const NODE_W = 180;
+    const NODE_H = 68;
+    const SIBLING_GAP = 40;
+    const LEVEL_GAP   = 120;
+    const PADDING_X   = 40;
+    const PADDING_Y   = 40;
+
+    function measureSubtree(n, cache){
+      if (cache.has(n)) return cache.get(n);
+      const kids = n.children || [];
+      let width;
+      if (!kids.length){
+        width = NODE_W;
+      } else {
+        const childWidths = kids.map(c => measureSubtree(c, cache));
+        const sumChildren = childWidths.reduce((a,b)=>a+b,0) + SIBLING_GAP*(kids.length-1);
+        width = Math.max(NODE_W, sumChildren);
+      }
+      cache.set(n, width);
+      return width;
+    }
+
+    function layoutTree(root){
+      const cache = new Map();
+      measureSubtree(root, cache);
+      const pos = {}; // id -> top-left {x,y}
+
+      function assign(n, left, depth){
+        const kids = n.children || [];
+        const width = cache.get(n);
+        const x = left + (width - NODE_W)/2;
+        const y = PADDING_Y + depth*LEVEL_GAP;
+        pos[n.id] = {x, y};
+
+        let cursor = left;
+        for (const c of kids){
+          const cw = cache.get(c);
+          assign(c, cursor, depth+1);
+          cursor += cw + SIBLING_GAP;
+        }
+      }
+      assign(root, PADDING_X, 0);
+      return pos;
+    }
+
+    // --- Render ---
+    const svg = document.getElementById("tree");
+
+    function render(){
+      svg.innerHTML = "";
+      if (!tree) return;
+
+      const pos = layoutTree(tree);
+
+      // Edges
+      visit(tree, (n, d, p)=>{
+        if (!p) return;
+        const pPos = pos[p.id], nPos = pos[n.id];
+        const x1 = pPos.x + NODE_W/2;
+        const y1 = pPos.y + NODE_H;
+        const x2 = nPos.x + NODE_W/2;
+        const y2 = nPos.y;
+        const l = line(x1, y1, x2, y2);
+        l.setAttribute("class", "edge");
+        svg.appendChild(l);
+      });
+
+      // Nodes
+      visit(tree, (n)=>{
+        const g = document.createElementNS(svg.namespaceURI, "g");
+        g.setAttribute("class", "node" + (n.id===selectedId ? " selected":""));
+        g.setAttribute("transform", `translate(${pos[n.id].x},${pos[n.id].y})`);
+
+        const rect = document.createElementNS(svg.namespaceURI, "rect");
+        rect.setAttribute("width", NODE_W);
+        rect.setAttribute("height", NODE_H);
+        rect.setAttribute("rx", "12"); rect.setAttribute("ry","12");
+        g.appendChild(rect);
+
+        // Optional chip behind title to improve readability
+        const chip = document.createElementNS(svg.namespaceURI, "rect");
+        chip.setAttribute("class","title-bg");
+        chip.setAttribute("x", NODE_W/2 - 60);
+        chip.setAttribute("y", NODE_H/2 - 19);
+        chip.setAttribute("width", 120);
+        chip.setAttribute("height", 20);
+        g.appendChild(chip);
+
+        // Centered title
+        const title = document.createElementNS(svg.namespaceURI, "text");
+        title.setAttribute("x", NODE_W/2);
+        title.setAttribute("y", NODE_H/2 - 10);
+        title.setAttribute("font-weight","600");
+        title.textContent = n.title || "(untitled)";
+        g.appendChild(title);
+
+        // Centered description (trimmed)
+        const desc = document.createElementNS(svg.namespaceURI, "text");
+        desc.setAttribute("class","desc");
+        desc.setAttribute("x", NODE_W/2);
+        desc.setAttribute("y", NODE_H/2 + 12);
+        const trimmed = (n.description || "").replace(/\s+/g," ").trim().slice(0, 64);
+        desc.textContent = trimmed;
+        g.appendChild(desc);
+
+        // Interactions
+        g.addEventListener("click", ()=>{
+          selectedId = n.id;
+          render();
+          syncDetailPanel();
+        });
+
+        g.addEventListener("dblclick", async ()=>{
+          const t = prompt("Title", n.title || "");
+          if (t === null) return;
+          const d = prompt("Description", n.description || "");
+          await fetch(`/api/node/${n.id}`, {
+            method:"PUT", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({title:t, description:d})
+          });
+        });
+
+        svg.appendChild(g);
+      });
+
+      // Fit viewBox
+      const xs = [], ys = [];
+      visit(tree, (n)=>{
+        const p = pos[n.id];
+        xs.push(p.x, p.x+NODE_W);
+        ys.push(p.y, p.y+NODE_H);
+      });
+      const minX = Math.min(...xs, 0);
+      const minY = Math.min(...ys, 0);
+      const maxX = Math.max(...xs, 1000);
+      const maxY = Math.max(...ys, 800);
+      svg.setAttribute("viewBox", `${minX} ${minY} ${maxX-minX + PADDING_X} ${maxY-minY + PADDING_Y}`);
+      // keep large intrinsic canvas so you can scroll if needed
+      svg.setAttribute("width", Math.max(1200, maxX+200));
+      svg.setAttribute("height", Math.max(800, maxY+200));
+    }
+
+    function line(x1,y1,x2,y2){
+      const l = document.createElementNS(svg.namespaceURI, "line");
+      l.setAttribute("x1",x1); l.setAttribute("y1",y1);
+      l.setAttribute("x2",x2); l.setAttribute("y2",y2);
+      return l;
+    }
+
+    // --- Right panel + toolbar wiring ---
+    const titleEl = document.getElementById("title");
+    const descEl  = document.getElementById("desc");
+    const addBtn  = document.getElementById("addChildBtn");
+    const editBtn = document.getElementById("editBtn");
+    const delBtn  = document.getElementById("deleteBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const centerBtn = document.getElementById("centerBtn");
+
+    function syncDetailPanel(){
+      const hasSel = !!selectedId;
+      addBtn.disabled = !hasSel;
+      editBtn.disabled = !hasSel;
+      delBtn.disabled  = !hasSel || selectedId === "root";
+      saveBtn.disabled = !hasSel;
+
+      if (!hasSel){ titleEl.value=""; descEl.value=""; return; }
+      const {node} = findNode(tree, selectedId);
+      titleEl.value = node?.title || "";
+      descEl.value = node?.description || "";
+    }
+
+    addBtn.onclick = async ()=>{
+      if (!selectedId) return;
+      const title = prompt("New child title", "New Node");
+      if (title === null) return;
+      const description = prompt("Description", "") || "";
+      const r = await fetch("/api/node", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ parentId: selectedId, title, description })
+      });
+      const data = await r.json();
+      if (data.newId) { selectedId = data.newId; } // focus new node
+    };
+
+    editBtn.onclick = async ()=>{
+      if (!selectedId) return;
+      const {node} = findNode(tree, selectedId);
+      const t = prompt("Title", node.title || "");
+      if (t === null) return;
+      const d = prompt("Description", node.description || "");
+      await fetch(`/api/node/${selectedId}`, {
+        method:"PUT", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ title: t, description: d })
+      });
+    };
+
+    delBtn.onclick = async ()=>{
+      if (!selectedId || selectedId==="root") return;
+      if (!confirm("Delete this node and its subtree?")) return;
+      await fetch(`/api/node/${selectedId}`, { method:"DELETE" });
+      selectedId = "root";
+      syncDetailPanel();
+    };
+
+    saveBtn.onclick = async ()=>{
+      if (!selectedId) return;
+      await fetch(`/api/node/${selectedId}`, {
+        method:"PUT", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ title: titleEl.value, description: descEl.value })
+      });
+    };
+
+    centerBtn.onclick = ()=>{
+      document.getElementById("treeWrap").scrollTo({top:0,left:0,behavior:"smooth"});
+    };
+
+    // Init
+    (async ()=>{
+      await fetchTree();
+      selectedId = "root";
+      render();
+      syncDetailPanel();
+    })();
+  </script>
+</body>
+</html>
