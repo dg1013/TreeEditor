@@ -3,6 +3,82 @@ from flask_socketio import SocketIO, emit
 import json, os, threading
 from pathlib import Path
 
+from copy import deepcopy
+
+def _flow_root_title(flow):
+    by_title = {n["title"]: n for n in flow}
+    referenced = set()
+    for n in flow:
+        for e in n.get("next", []):
+            tgt = e.get("next") if isinstance(e, dict) else e
+            if tgt: referenced.add(tgt)
+    if "START" in by_title:
+        return "START"
+    for t in by_title:
+        if t not in referenced:
+            return t
+    return flow[0]["title"]  # fallback
+
+def _flow_to_children(flow):
+    """Convert array-of-nodes with .next[label,next:title] into nested children tree."""
+    by_title = {n["title"]: n for n in flow}
+    root_title = _flow_root_title(flow)
+
+    def build(title, seen):
+        src = by_title.get(title)
+        if not src:
+            # missing reference; make a stub
+            return {"id": f"missing:{title}", "title": title, "description": "", "children": []}
+
+        node = {
+            "id": src.get("id", title),
+            "title": src.get("title", title),
+            "description": src.get("description", ""),
+            "children": []
+        }
+        if title in seen:
+            # cycle guard: return node without expanding children
+            return node
+
+        seen = seen | {title}
+        for edge in src.get("next", []):
+            tgt_title = edge["next"] if isinstance(edge, dict) else edge
+            child = build(tgt_title, seen)
+            if isinstance(edge, dict) and "label" in edge:
+                # keep edge label on the child so we can round-trip it later
+                child["edgeLabel"] = edge["label"]
+            node["children"].append(child)
+        return node
+
+    return build(root_title, set())
+
+def _children_to_flow(tree):
+    """Convert nested children tree back to array-of-nodes with .next[label,next:title]."""
+    nodes = {}
+
+    def ensure_node(n):
+        t = n.get("title", "")
+        nid = n.get("id") or t
+        if t not in nodes:
+            nodes[t] = {"id": nid, "title": t, "description": n.get("description", ""), "next": []}
+
+    def walk(n):
+        ensure_node(n)
+        for c in n.get("children", []):
+            ensure_node(c)
+            # push an edge from n to c by *title*, with the label we carried
+            nodes[n["title"]]["next"].append({
+                "label": c.get("edgeLabel", ""),
+                "next": c.get("title", "")
+            })
+            walk(c)
+
+    walk(tree)
+    # return as a list, preserving at least root first
+    root_first = [nodes[tree["title"]]] + [v for k, v in nodes.items() if k != tree["title"]]
+    return root_first
+
+
 APP_DIR = Path(__file__).parent
 DATA_FILE = APP_DIR / "tree.json"
 
@@ -15,14 +91,30 @@ _file_lock = threading.Lock()
 def load_tree():
     with _file_lock:
         if not DATA_FILE.exists():
-            # default root if file missing
-            root = {"id":"root","title":"Root","description":"Root node","children":[]}
-            DATA_FILE.write_text(json.dumps(root, indent=2))
-        return json.loads(DATA_FILE.read_text())
+            # If missing, seed with a minimal flow that matches your file format
+            seed = [{
+                "id": "root-seed",
+                "title": "START",
+                "description": "Start",
+                "next": []
+            }]
+            DATA_FILE.write_text(json.dumps(seed, indent=2))
+
+        raw = json.loads(DATA_FILE.read_text())
+        # If file is already a nested dict, just return it; otherwise convert flow → children
+        if isinstance(raw, list):
+            return _flow_to_children(raw)
+        elif isinstance(raw, dict):
+            return raw
+        else:
+            raise ValueError("Unsupported tree.json format")
 
 def save_tree(tree):
     with _file_lock:
-        DATA_FILE.write_text(json.dumps(tree, indent=2))
+        # Always store as the original flow (array) so your file shape is preserved
+        flow = _children_to_flow(tree)
+        DATA_FILE.write_text(json.dumps(flow, indent=2))
+
 
 def find_node(node, node_id, parent=None):
     if node["id"] == node_id:
@@ -43,13 +135,11 @@ def api_get_tree():
 
 @app.post("/api/node")
 def api_add_node():
-    """
-    body: { "parentId": "id", "title": "t", "description": "d", "id": (optional) }
-    """
     data = request.get_json(force=True) or {}
     parent_id = data.get("parentId")
     title = data.get("title", "Untitled")
     desc = data.get("description", "")
+    edge_label = data.get("edgeLabel", "")   # <-- NEW
     new_id = data.get("id") or f"n{os.urandom(4).hex()}"
 
     tree = load_tree()
@@ -61,6 +151,7 @@ def api_add_node():
         "id": new_id,
         "title": title,
         "description": desc,
+        "edgeLabel": edge_label,            # <-- keep it here
         "children": []
     })
     save_tree(tree)

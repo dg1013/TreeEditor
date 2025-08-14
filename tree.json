@@ -1,82 +1,202 @@
-{
-  "id": "root",
-  "title": "Root",
-  "description": "Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[Root node dasdfasdfkakhs dhalkwjehlfkaj whs;ofikWJHe0o89ruj[w02 8a[",
-  "children": [
-    {
-      "id": "n3da5930c",
-      "title": "New Node",
-      "description": "",
-      "children": [
-        {
-          "id": "n18a0e98a",
-          "title": "New Node",
-          "description": "",
-          "children": [
-            {
-              "id": "n2cbe7c75",
-              "title": "New Node",
-              "description": "",
-              "children": [
-                {
-                  "id": "nf6d48aca",
-                  "title": "New Node",
-                  "description": "",
-                  "children": []
-                },
-                {
-                  "id": "n8d1c68d6",
-                  "title": "New Node",
-                  "description": "",
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "n60f49650",
-              "title": "New Node",
-              "description": "",
-              "children": []
-            },
-            {
-              "id": "n00a0de11",
-              "title": "New Node",
-              "description": "",
-              "children": []
-            },
-            {
-              "id": "n0a4ffc08",
-              "title": "New Node",
-              "description": "",
-              "children": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "n08f7a8b1",
-      "title": "New Node",
-      "description": "",
-      "children": []
-    },
-    {
-      "id": "nc89ec220",
-      "title": "New Node",
-      "description": "",
-      "children": []
-    },
-    {
-      "id": "n060a86aa",
-      "title": "New Node",
-      "description": "",
-      "children": []
-    },
-    {
-      "id": "neb939a33",
-      "title": "New Node",
-      "description": "",
-      "children": []
-    }
-  ]
-}
+[
+  {
+    "id": "f3c52a5f4e9b4b3baf14e2a8c6c6b46f",
+    "title": "START",
+    "description": "What would you like to work on?",
+    "solution": "",
+    "next": [
+      {
+        "label": "I am perfecting each paragraph before moving on, and it's taking too long to write",
+        "next": "perfectionist"
+      },
+      {
+        "label": "I feel like my paragraphs wander",
+        "next": "wandering_paragraphs"
+      },
+      {
+        "label": "I have too many subtopics in mind",
+        "next": "too_many_subtopics"
+      },
+      {
+        "label": "I have writer's block and don't know how to get started",
+        "next": "writers_block"
+      }
+    ]
+  },
+  {
+    "id": "5f9d83b947e243198f2d4a2e901adce7",
+    "title": "wandering_paragraphs",
+    "description": "I feel like my paragraphs wander.",
+    "solution": "Try outlining each paragraph’s main idea in a single sentence before writing to keep focus and structure clear.",
+    "next": []
+  },
+  {
+    "id": "88c7b26bbd4049a4a2580988750f381e",
+    "title": "perfectionist",
+    "description": "I am perfecting each paragraph before moving on, and it's taking too long to write.",
+    "solution": "Try constructing a general outline of what subjects you want to cover.",
+    "next": []
+  },
+  {
+    "id": "4aefb54a9f05402c8961f9e699e2af56",
+    "title": "narrow_topic",
+    "description": "I am having trouble narrowing down my topic.",
+    "solution": "Focus on diagnosing why your topic feels overwhelming.",
+    "next": [
+      {
+        "label": "I have too many subtopics in mind",
+        "next": "too_many_subtopics"
+      },
+      {
+        "label": "My topic still sounds vague",
+        "next": "vague_topic"
+      },
+      {
+        "label": "I can’t decide which angle to take",
+        "next": "cant_decide_angle"
+      },
+      {
+        "label": "I keep adding more ideas as I go",
+        "next": "adding_more_ideas"
+      },
+      {
+        "label": "I’m worried my topic will be too small",
+        "next": "topic_too_small"
+      }
+    ]
+  },
+  {
+    "id": "2f3d7b64c98548fdb6937ec4e1b6adcd",
+    "title": "too_many_subtopics",
+    "description": "I have too many subtopics in mind.",
+    "solution": "Let’s figure out whether your challenge is interest or evidence, then prioritize accordingly.",
+    "next": [
+      {
+        "label": "I feel equally interested in all of them and can’t choose",
+        "next": "too_many_subtopics_interest"
+      },
+      {
+        "label": "I’m worried some subtopics won’t have enough sources or evidence",
+        "next": "too_many_subtopics_evidence"
+      }
+    ]
+  },
+  {
+    "id": "81f5d2a0ac8b4c1b84d3d9c81b993ad0",
+    "title": "too_many_subtopics_interest",
+    "description": "I feel equally interested in all of them and can’t choose.",
+    "solution": "Rank each subtopic by how excited you feel about it right now. Choose the top 1 or 2 to start writing on, and remind yourself you can explore others later.",
+    "next": []
+  },
+  {
+    "id": "1593fa3e541b43d6a1cfc4782e8261a2",
+    "title": "too_many_subtopics_evidence",
+    "description": "I’m worried some subtopics won’t have enough sources or evidence.",
+    "solution": "Do a quick 10-minute search for key sources on each subtopic. Prioritize the ones with the strongest, most accessible evidence.",
+    "next": []
+  },
+  {
+    "id": "a8fd097e7818432ba68a0a0dc0c0f3a4",
+    "title": "vague_topic",
+    "description": "My topic still sounds vague",
+    "solution": "Clarify your argument and language to transform a vague topic into a strong, specific thesis.",
+    "next": [
+      {
+        "label": "I’m stating what the topic is, not what I think about it",
+        "next": "vague_topic_argument"
+      },
+      {
+        "label": "My language is full of general or abstract words",
+        "next": "vague_topic_language"
+      }
+    ]
+  },
+  {
+    "id": "f184b4a7c41a4e4e99af3d96d60e2fc6",
+    "title": "vague_topic_argument",
+    "description": "I’m stating what the topic is, not what I think about it.",
+    "solution": "Turn your topic into an argument by finishing this sentence: 'I will argue that ___ because ___.' This helps you move from description to analysis.",
+    "next": []
+  },
+  {
+    "id": "f8a45bb537294a0c9d67e5a0e91cb28f",
+    "title": "vague_topic_language",
+    "description": "My language is full of general or abstract words.",
+    "solution": "Replace vague words with specific nouns and active verbs. For example, swap 'effects' with 'decline in readership' or 'themes' with 'depictions of isolation.'",
+    "next": []
+  },
+  {
+    "id": "8905674d17d74e64b302ab8f3f23c061",
+    "title": "cant_decide_angle",
+    "description": "I can’t decide which angle to take.",
+    "solution": "Write down three possible angles in one sentence each. Choose the one that feels most exciting to you—not the one that seems 'safest'. Your engagement will make the writing stronger.",
+    "next": []
+  },
+  {
+    "id": "5a1df23d1e944ffab70a214967e0f7c1",
+    "title": "adding_more_ideas",
+    "description": "I keep adding more ideas as I go.",
+    "solution": "Treat your first choice as a case study—one slice of the bigger idea. You can always note the wider context briefly in your intro or conclusion.",
+    "next": []
+  },
+  {
+    "id": "9d3406b90f35431d8a8584fc049efdf6",
+    "title": "topic_too_small",
+    "description": "I’m worried my topic will be too small",
+    "solution": "Let’s explore whether you need to deepen your topic or connect it to bigger themes.",
+    "next": [
+      {
+        "label": "I’m trying to make my topic bigger by adding unrelated ideas",
+        "next": "topic_too_small_widening"
+      },
+      {
+        "label": "I don’t see the significance of my specific topic",
+        "next": "topic_too_small_significance"
+      }
+    ]
+  },
+  {
+    "id": "f0f48209f94647d2b612d3b1a56a0ab0",
+    "title": "topic_too_small_widening",
+    "description": "I’m trying to make my topic bigger by adding unrelated ideas.",
+    "solution": "Instead of widening the topic, deepen it. Ask 'Why does this matter?' multiple times to explore layers of meaning within your narrow focus.",
+    "next": []
+  },
+  {
+    "id": "9f29a6e004654ca09b3494f3fdf35d29",
+    "title": "topic_too_small_significance",
+    "description": "I don’t see the significance of my specific topic.",
+    "solution": "Connect your topic to a bigger conversation or theme. Show how your narrow focus reveals something important about the broader subject.",
+    "next": []
+  },
+  {
+    "id": "af7c7f63df92481aa057580253fdc785",
+    "title": "writers_block",
+    "description": "I have writer's block and don't know how to get started",
+    "solution": "Identify whether the block is at the sentence level or structure level, and pick a path to break the impasse.",
+    "next": [
+      {
+        "label": "I don’t know how to start the first sentence",
+        "next": "writers_block_start"
+      },
+      {
+        "label": "I feel overwhelmed by structure and organization",
+        "next": "writers_block_structure"
+      }
+    ]
+  },
+  {
+    "id": "7fbd5a1f564740b5b513fbc58a43a4b8",
+    "title": "writers_block_start",
+    "description": "I don’t know how to start the first sentence.",
+    "solution": "Skip the introduction entirely and write an easy body paragraph first. Getting words down reduces pressure and builds momentum.",
+    "next": []
+  },
+  {
+    "id": "2b86d403a78648f1a39432d3bbcc04dc",
+    "title": "writers_block_structure",
+    "description": "I feel overwhelmed by structure and organization.",
+    "solution": "Write a simple bullet list of 3–5 points you want to cover. Use that as a roadmap to guide your writing step-by-step.",
+    "next": []
+  }
+]
