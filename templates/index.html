@@ -253,13 +253,13 @@
         g.appendChild(rect);
 
         // Optional chip behind title to improve readability
-        const chip = document.createElementNS(svg.namespaceURI, "rect");
-        chip.setAttribute("class","title-bg");
-        chip.setAttribute("x", NODE_W/2 - 60);
-        chip.setAttribute("y", NODE_H/2 - 19);
-        chip.setAttribute("width", 120);
-        chip.setAttribute("height", 20);
-        g.appendChild(chip);
+        // const chip = document.createElementNS(svg.namespaceURI, "rect");
+        // chip.setAttribute("class","title-bg");
+        // chip.setAttribute("x", NODE_W/2 - 60);
+        // chip.setAttribute("y", NODE_H/2 - 19);
+        // chip.setAttribute("width", 120);
+        // chip.setAttribute("height", 20);
+        // g.appendChild(chip);
 
         // Centered title
         const title = document.createElementNS(svg.namespaceURI, "text");
@@ -269,14 +269,14 @@
         title.textContent = n.title || "(untitled)";
         g.appendChild(title);
 
-        // Centered description (trimmed)
-        const desc = document.createElementNS(svg.namespaceURI, "text");
-        desc.setAttribute("class","desc");
-        desc.setAttribute("x", NODE_W/2);
-        desc.setAttribute("y", NODE_H/2 + 12);
-        const trimmed = (n.description || "").replace(/\s+/g," ").trim().slice(0, 64);
-        desc.textContent = trimmed;
-        g.appendChild(desc);
+        // // Centered description (trimmed)
+        // const desc = document.createElementNS(svg.namespaceURI, "text");
+        // desc.setAttribute("class","desc");
+        // desc.setAttribute("x", NODE_W/2);
+        // desc.setAttribute("y", NODE_H/2 + 12);
+        // const trimmed = (n.description || "").replace(/\s+/g," ").trim().slice(0, 64);
+        // desc.textContent = trimmed;
+        // g.appendChild(desc);
 
         // Interactions
         g.addEventListener("click", ()=>{
